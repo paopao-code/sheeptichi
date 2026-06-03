@@ -1,0 +1,14 @@
+node_modules/
+dist/
+target/
+.idea/
+.vscode/
+*.log
+.env
+uploads/
+models/
+*.onnx
+*.pt
+*.dll
+service-logs/
+application-dev.yml

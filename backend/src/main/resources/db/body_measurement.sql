@@ -1,0 +1,16 @@
+CREATE DATABASE IF NOT EXISTS sheep_new
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE sheep_new;
+
+CREATE TABLE IF NOT EXISTS body_measurement (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT 'ID',
+  pen_no VARCHAR(64) NOT NULL COMMENT '栏位号',
+  body_length DECIMAL(10,2) NOT NULL COMMENT '体长',
+  body_height DECIMAL(10,2) NOT NULL COMMENT '体高',
+  chest_width DECIMAL(10,2) NOT NULL COMMENT '胸宽',
+  chest_depth DECIMAL(10,2) NOT NULL COMMENT '胸深',
+  chest_girth DECIMAL(10,2) NOT NULL COMMENT '胸围',
+  measured_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '测量时间'
+) COMMENT='羊体测量数据表';

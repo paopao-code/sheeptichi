@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn compile *)",
+      "Bash(npx vue-tsc *)",
+      "Bash(mvn spring-boot:run -q)",
+      "Bash(npm run *)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 16368 /F)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(powershell -Command \"Get-Service -Name MySQL* 2>&1; sc query MySQL 2>&1; sc query MySQL80 2>&1\")",
+      "Bash(tasklist)"
+    ]
+  }
+}
