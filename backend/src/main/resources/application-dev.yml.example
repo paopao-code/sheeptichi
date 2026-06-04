@@ -4,12 +4,3 @@ spring:
     url: jdbc:mysql://localhost:3306/sheep_new?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 你的root密码
-
-# WiFi 数据采集有两种方式：
-# 1. 定时拉取：每隔 pull-interval-ms 毫秒自动从以下 devices 拉取数据
-# 2. 手动拉取：调用 POST /api/wifi/pull 接口立即拉取，返回每台设备的拉取结果
-wifi:
-  pull-interval-ms: 60000
-  devices:
-    - name: device-1
-      url: http://192.168.1.100:8080/api/measurement-data

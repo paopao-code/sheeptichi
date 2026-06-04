@@ -72,14 +72,15 @@ interface MetricConfig {
   key: MetricKey;
   label: string;
   color: string;
+  chartType: 'line' | 'area' | 'heatmap' | 'bar' | 'stepLine';
 }
 
 const metricConfigs: MetricConfig[] = [
-  { key: 'bodyLength', label: '体长', color: '#2563eb' },
-  { key: 'bodyHeight', label: '体高', color: '#0f8b6f' },
-  { key: 'chestWidth', label: '胸宽', color: '#b7791f' },
-  { key: 'chestDepth', label: '胸深', color: '#7c3aed' },
-  { key: 'chestGirth', label: '胸围', color: '#0891b2' }
+  { key: 'bodyLength', label: '体长', color: '#2563eb', chartType: 'line' },
+  { key: 'bodyHeight', label: '体高', color: '#0ea5e9', chartType: 'area' },
+  { key: 'chestWidth', label: '胸宽', color: '#14b8a6', chartType: 'heatmap' },
+  { key: 'chestDepth', label: '胸深', color: '#6366f1', chartType: 'bar' },
+  { key: 'chestGirth', label: '胸围', color: '#0891b2', chartType: 'stepLine' }
 ];
 
 const measurements = ref<BodyMeasurement[]>([]);
@@ -167,13 +168,24 @@ function renderMetricChart(metric: MetricConfig) {
     return;
   }
 
+  const data = filteredMeasurements.value.map(row => Number(row[metric.key] || 0));
+  const isHeatmap = metric.chartType === 'heatmap';
+  const maxValue = Math.max(...data, 1);
+
   chart.setOption({
     color: [metric.color],
     tooltip: {
-      trigger: 'axis',
+      trigger: isHeatmap ? 'item' : 'axis',
       backgroundColor: '#ffffff',
       borderColor: '#e5e7eb',
-      textStyle: { color: '#1f2937' }
+      textStyle: { color: '#1f2937' },
+      formatter: isHeatmap
+        ? (params: { value?: unknown }) => {
+            const value = Array.isArray(params.value) ? params.value : [];
+            const id = filteredMeasurements.value[Number(value[0])]?.id || '--';
+            return `ID号：${id}<br/>${metric.label}：${value[2] || 0}`;
+          }
+        : undefined
     },
     grid: { left: 52, right: 24, top: 30, bottom: 46 },
     xAxis: {
@@ -186,30 +198,128 @@ function renderMetricChart(metric: MetricConfig) {
       axisTick: { show: false },
       axisLine: { lineStyle: { color: '#e5e7eb' } }
     },
-    yAxis: {
-      type: 'value',
-      name: metric.label,
-      nameTextStyle: { color: '#6b7280' },
-      splitLine: { lineStyle: { color: '#eef2f7' } }
-    },
-    series: [
-      {
-        name: metric.label,
-        type: 'bar',
-        barMaxWidth: 38,
-        data: filteredMeasurements.value.map(row => Number(row[metric.key] || 0)),
-        itemStyle: {
-          borderRadius: [6, 6, 0, 0]
-        },
-        label: {
-          show: true,
-          position: 'top',
-          color: '#4b5563',
-          fontSize: 11
+    yAxis: isHeatmap
+      ? {
+          type: 'category',
+          data: [metric.label],
+          axisLabel: { color: '#6b7280', fontSize: 12 },
+          axisTick: { show: false },
+          axisLine: { lineStyle: { color: '#e5e7eb' } }
         }
-      }
+      : {
+          type: 'value',
+          name: metric.label,
+          nameTextStyle: { color: '#6b7280' },
+          splitLine: { lineStyle: { color: '#eef2f7' } }
+        },
+    visualMap: isHeatmap
+      ? {
+          show: false,
+          min: 0,
+          max: maxValue,
+          inRange: {
+            color: ['#ecfeff', '#bae6fd', metric.color]
+          }
+        }
+      : undefined,
+    series: [
+      buildMetricSeries(metric, data)
     ]
   }, true);
+}
+
+function buildMetricSeries(metric: MetricConfig, data: number[]) {
+  const baseLabel = {
+    show: true,
+    position: 'top',
+    color: '#4b5563',
+    fontSize: 11
+  };
+
+  if (metric.chartType === 'line') {
+    return {
+      name: metric.label,
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      data,
+      lineStyle: { width: 3 },
+      itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
+      label: baseLabel
+    };
+  }
+
+  if (metric.chartType === 'area') {
+    return {
+      name: metric.label,
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      data,
+      lineStyle: { width: 3 },
+      areaStyle: {
+        opacity: 0.22,
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: `${metric.color}66` },
+          { offset: 1, color: `${metric.color}08` }
+        ])
+      },
+      label: baseLabel
+    };
+  }
+
+  if (metric.chartType === 'heatmap') {
+    return {
+      name: metric.label,
+      type: 'heatmap',
+      data: data.map((value, index) => [index, 0, value]),
+      itemStyle: {
+        borderRadius: 6,
+        borderColor: '#ffffff',
+        borderWidth: 3
+      },
+      label: {
+        show: true,
+        color: '#0f172a',
+        fontSize: 12,
+        formatter: (params: { value?: unknown }) => {
+          const value = Array.isArray(params.value) ? params.value : [];
+          return value[2] || '';
+        }
+      }
+    };
+  }
+
+  if (metric.chartType === 'stepLine') {
+    return {
+      name: metric.label,
+      type: 'line',
+      step: 'middle',
+      symbol: 'diamond',
+      symbolSize: 8,
+      data,
+      lineStyle: { width: 3 },
+      itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
+      label: baseLabel
+    };
+  }
+
+  return {
+    name: metric.label,
+    type: 'bar',
+    barMaxWidth: 38,
+    data,
+    itemStyle: {
+      borderRadius: [6, 6, 0, 0],
+      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: metric.color },
+        { offset: 1, color: `${metric.color}99` }
+      ])
+    },
+    label: baseLabel
+  };
 }
 
 function renderAverageChart() {
@@ -219,44 +329,47 @@ function renderAverageChart() {
   }
 
   chart.setOption({
-    color: ['#2563eb'],
+    color: ['#2563eb', '#0ea5e9', '#14b8a6', '#6366f1', '#0891b2'],
     tooltip: {
-      trigger: 'axis',
       backgroundColor: '#ffffff',
       borderColor: '#e5e7eb',
       textStyle: { color: '#1f2937' }
     },
-    grid: { left: 52, right: 24, top: 30, bottom: 42 },
-    xAxis: {
-      type: 'category',
-      data: metricConfigs.map(metric => metric.label),
-      axisLabel: { color: '#6b7280', fontSize: 12 },
-      axisTick: { show: false },
-      axisLine: { lineStyle: { color: '#e5e7eb' } }
-    },
-    yAxis: {
-      type: 'value',
-      name: '平均值',
-      nameTextStyle: { color: '#6b7280' },
-      splitLine: { lineStyle: { color: '#eef2f7' } }
+    radar: {
+      center: ['50%', '52%'],
+      radius: '68%',
+      indicator: metricConfigs.map(metric => ({
+        name: metric.label,
+        max: Math.max(Number(averageMap.value[metric.key] === '--' ? 0 : averageMap.value[metric.key]) * 1.35, 1)
+      })),
+      axisName: { color: '#4b5563' },
+      axisLine: { lineStyle: { color: '#dbeafe' } },
+      splitLine: { lineStyle: { color: '#dbeafe' } },
+      splitArea: {
+        areaStyle: { color: ['#ffffff', '#f0f9ff'] }
+      }
     },
     series: [
       {
         name: '平均值',
-        type: 'bar',
-        barMaxWidth: 46,
-        data: metricConfigs.map(metric => Number(averageMap.value[metric.key] === '--' ? 0 : averageMap.value[metric.key])),
-        itemStyle: {
-          borderRadius: [6, 6, 0, 0],
-          color(params: { dataIndex: number }) {
-            return metricConfigs[params.dataIndex]?.color || '#2563eb';
+        type: 'radar',
+        data: [
+          {
+            name: selectedPenNo.value === 'all' ? '全部栏位平均值' : `${selectedPenNo.value} 平均值`,
+            value: metricConfigs.map(metric => Number(averageMap.value[metric.key] === '--' ? 0 : averageMap.value[metric.key])),
+            areaStyle: {
+              opacity: 0.22,
+              color: '#0ea5e9'
+            },
+            lineStyle: {
+              color: '#2563eb',
+              width: 3
+            },
+            itemStyle: {
+              color: '#2563eb'
+            }
           }
-        },
-        label: {
-          show: true,
-          position: 'top',
-          color: '#4b5563'
-        }
+        ]
       }
     ]
   }, true);
