@@ -47,7 +47,7 @@
         stripe
         empty-text="暂无测量数据"
       >
-        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column type="index" label="序号" width="80" align="center" />
         <el-table-column prop="penNo" label="栏位号" min-width="110" align="center">
           <template #default="{ row }">
             <el-tag effect="plain">{{ row.penNo }}</el-tag>

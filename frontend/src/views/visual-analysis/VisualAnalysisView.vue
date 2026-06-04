@@ -169,6 +169,7 @@ function renderMetricChart(metric: MetricConfig) {
   }
 
   const data = filteredMeasurements.value.map(row => Number(row[metric.key] || 0));
+  const sequenceLabels = filteredMeasurements.value.map((_, index) => String(index + 1));
   const isHeatmap = metric.chartType === 'heatmap';
   const maxValue = Math.max(...data, 1);
 
@@ -182,18 +183,18 @@ function renderMetricChart(metric: MetricConfig) {
       formatter: isHeatmap
         ? (params: { value?: unknown }) => {
             const value = Array.isArray(params.value) ? params.value : [];
-            const id = filteredMeasurements.value[Number(value[0])]?.id || '--';
-            return `ID号：${id}<br/>${metric.label}：${value[2] || 0}`;
+            const sequence = Number(value[0]) + 1 || '--';
+            return `序号：${sequence}<br/>${metric.label}：${value[2] || 0}`;
           }
         : undefined
     },
     grid: { left: 52, right: 24, top: 30, bottom: 46 },
     xAxis: {
       type: 'category',
-      name: 'ID号',
+      name: '序号',
       nameLocation: 'middle',
       nameGap: 30,
-      data: filteredMeasurements.value.map(row => String(row.id)),
+      data: sequenceLabels,
       axisLabel: { color: '#6b7280', fontSize: 11 },
       axisTick: { show: false },
       axisLine: { lineStyle: { color: '#e5e7eb' } }
